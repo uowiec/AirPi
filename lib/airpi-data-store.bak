@@ -12,7 +12,6 @@
 #   * SQLite database
 #   * RRD archive
 
-from builtins import str
 import datetime, logging, os.path, subprocess, sys, time
 
 # Status file containing the data acquired by PMS5003,
@@ -44,7 +43,7 @@ try:
     fp = open(PMS5003_STATUS, "r")
     data = fp.readline().strip().split(" ")
     fp.close()
-except Exception as e:
+except Exception, e:
     logging.error(u'%s: Reading PMS5003 status file: %s' % (NAME, str(e)))
 
 try:
@@ -57,7 +56,7 @@ try:
         for key in PMS5003_DATA:
             i += 1
             values[key] = "%0.3f" % (float(data[i]))
-except Exception as e:
+except Exception, e:
     logging.error(u'%s: Parsing PMS5003 status file: %s' % (NAME, str(e)))
 
 #----------------------------------------------------------------
@@ -68,19 +67,18 @@ try:
     subproc = subprocess.Popen(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, stderr = subproc.communicate()
     retcode = subproc.returncode
-except Exception as e:
+except Exception, e:
     logging.error(u'%s: Failed to exec BME280 read program: %s' % (NAME, str(e)))
     retcode = -1
 
 if retcode == 0:
     for line in output.splitlines():
-        repr(line)
-        if line.startswith(b'Temperature'):
-            values['t'] = "%0.2f" % (float(line.split(b':')[1]))
-        elif line.startswith(b'Pressure'):
-            values['p'] = "%0.2f" % (float(line.split(b':')[1]))
-        elif line.startswith(b'Humidity'):
-            values['hum'] = "%0.2f" % (float(line.split(b':')[1]))
+        if line.startswith('Temperature'):
+            values['t'] = "%0.2f" % (float(line.split(':')[1]))
+        elif line.startswith('Pressure'):
+            values['p'] = "%0.2f" % (float(line.split(':')[1]))
+        elif line.startswith('Humidity'):
+            values['hum'] = "%0.2f" % (float(line.split(':')[1]))
 else:
     logging.error(u'%s: Cannot read values from BME280' % (NAME,))
 
@@ -97,7 +95,7 @@ timestamp_utc_now = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(time_now))
 template = ':'.join(BME280_DATA + PMS5003_DATA).replace('.', '_')
 data = []
 for key in (BME280_DATA + PMS5003_DATA):
-    if key in list(values.keys()):
+    if key in values.keys():
         data.append(values[key])
     else:
         data.append('U')
@@ -112,7 +110,7 @@ if retcode != 0:
 #----------------------------------------------------------------
 if len(values) > 0:
     data = []
-    for key, val in values.items():
+    for key, val in values.iteritems():
         data.append("%s=%s" % (key, val))
     cmd = [os.path.join(LIB_DIR, 'airpi-sql-insert'), timestamp_utc_now, ','.join(data)]
     #print cmd

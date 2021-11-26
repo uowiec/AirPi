@@ -12,9 +12,6 @@
 #   by 1000 and convert to int before storing in RRD.
 # * Use the provided timestamp (seconds from Unix epoch UTC).
 
-from __future__ import print_function
-from builtins import str
-from builtins import range
 import logging, logging.handlers, os.path, subprocess, sys, time
 
 # RRD filename template: will be filled with station_id.
@@ -25,7 +22,7 @@ MULTPLY_BY_1000 = ['t', 'p', 'hum']
 NAME = os.path.basename(sys.argv[0])
 
 if len(sys.argv) < 5:
-    print(u'Usage: %s TIMESTAMP STATION_ID ds_name[:ds-name]... value[:value]...' % (NAME))
+    print u'Usage: %s TIMESTAMP STATION_ID ds_name[:ds-name]... value[:value]...' % (NAME)
     sys.exit(1)
 
 timestamp = sys.argv[1]
@@ -108,7 +105,7 @@ try:
                 data.append(str(int(float(values[i]) * 1000)))
             else:
                 data.append(str(int(float(values[i]))))
-except Exception as e:
+except Exception, e:
     logging.error("%s: Error parsing input data: %s" % (NAME, str(e),))
 
 if (len(data) - 1) != len(names):

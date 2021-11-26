@@ -12,10 +12,7 @@
 #    ordered by timestamp. Each transfer is limited at max
 #    HTTP_XFER_MAX_DAYS of data.
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-import configparser, datetime, json, logging, os.path, sqlite3, sys, requests
+import ConfigParser, datetime, json, logging, os.path, sqlite3, sys, requests
 
 UTC_FORMAT = '%Y-%m-%dT%H:%M:%SZ' # ISO 8601 UTC time format
 NAME = os.path.basename(sys.argv[0])
@@ -28,7 +25,7 @@ DEFAULTS = {
     'HTTP_REQUEST_URL': '',
     'HTTP_XFER_MAX_DAYS': '1'
 }
-config = configparser.RawConfigParser(DEFAULTS)
+config = ConfigParser.RawConfigParser(DEFAULTS)
 config.read(CFG_FILE)
 HTTP_LOGIN         = config.get('http_forward', 'HTTP_LOGIN')
 HTTP_PASSWORD      = config.get('http_forward', 'HTTP_PASSWORD')
@@ -48,7 +45,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 try:
     con = sqlite3.connect(SQLITE_DB)
     cur = con.cursor()
-except Exception as e:
+except Exception, e:
     logging.error("%s: Cannot open local database: %s" % (NAME, str(e),))
     sys.exit(1)
 
@@ -90,7 +87,7 @@ try:
     else:
         logging.info("%s: No newer data exists in local database" % (NAME,))
         sys.exit(0)
-except Exception as e:
+except Exception, e:
     logging.error("%s: SELECT min(timestamp)...: Error reading the database: %s" % (NAME, str(e),))
     sys.exit(1)
 
@@ -106,7 +103,7 @@ sql += " ORDER BY timestamp, type"
 try:
     cur.execute(sql, (first_dt.strftime(UTC_FORMAT), limit_dt.strftime(UTC_FORMAT)))
     sensors_data = cur.fetchall();
-except Exception as e:
+except Exception, e:
     logging.error("%s: SELECT timestamp...: Error reading the database: %s" % (NAME, str(e),))
     sys.exit(1)
 con.close()

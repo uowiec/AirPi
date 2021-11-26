@@ -9,8 +9,14 @@
 # Usage: bme280-snmp
 #        bme280-snmp {temperature|pressure|humidity}
 
-import os, os.path, pickle, sys
-from Adafruit_BME280 import *
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+import os, os.path, pickle, sys, board
+#from Adafruit_BME280 import *
+from adafruit_bme280 import advanced as adafruit_bme280
 
 NAME = os.path.basename(sys.argv[0])
 BME280_STATUS = '/var/run/bme280.status'
@@ -51,43 +57,47 @@ try:
         if (time.time() - st.st_mtime) <= MAX_CACHE_SECONDS:
             with open(BME280_STATUS) as f:
                 temperature, pressure, humidity = pickle.load(f)
-except Exception, e:
+except Exception as e:
     if interactive:
-        print "WARNING: %s: Cannot read values from status file: %s" % (NAME, str(e))
+        print("WARNING: %s: Cannot read values from status file: %s" % (NAME, str(e)))
 
 if temperature == None or pressure == None or humidity == None:
     # Read from cache failed, get a real measurement.
-    import ConfigParser
+    import configparser
     DEFAULTS = { 'I2C_ADDRESS': '0x77' }
-    config = ConfigParser.RawConfigParser(DEFAULTS)
+    config = configparser.RawConfigParser(DEFAULTS)
     config.read(CFG_FILE)
     if not config.has_section('bme280'):
         config.add_section('bme280')
     I2C_ADDRESS = int(config.get('bme280', 'I2C_ADDRESS'), 0)
     try:
-        sensor = BME280(t_mode=BME280_OSAMPLE_16, p_mode=BME280_OSAMPLE_16, h_mode=BME280_OSAMPLE_16, address=I2C_ADDRESS)
-        temperature, pressure, humidity = readBME280All(sensor, READ_SAMPLES)
-    except Exception, e:
-        print "ERROR: %s: Cannot read values from sensor: %s" % (NAME, str(e))
+        i2c = board.I2C()
+        sensor = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=I2C_ADDRESS)
+        sensor.overscan_humidity = adafruit_bme280.OVERSCAN_X16
+        sensor.overscan_pressure = adafruit_bme280.OVERSCAN_X16
+        sensor.overscan_temperature = adafruit_bme280.OVERSCAN_X16
+        temperature, pressure, humidity = (sensor.temperature, sensor.pressure, sensor.relative_humidity)
+    except Exception as e:
+        print("ERROR: %s: Cannot read values from sensor: %s" % (NAME, str(e)))
         sys.exit(1)
 
     try:
         with open(BME280_STATUS, 'w') as f:
             pickle.dump([temperature, pressure, humidity], f)
-    except Exception, e:
+    except Exception as e:
         if interactive:
-            print "WARNING: %s: Cannot write status file: %s" % (NAME, str(e))
+            print("WARNING: %s: Cannot write status file: %s" % (NAME, str(e)))
 
 if interactive:
-    print "Temperature (°C): {0:0.3f}".format(temperature)
-    print "Pressure (hPa): {0:0.2f}".format(pressure)
-    print "Humidity (%): {0:0.2f}".format(humidity)
+    print("Temperature (°C): {0:0.3f}".format(temperature))
+    print("Pressure (hPa): {0:0.2f}".format(pressure))
+    print("Humidity (%): {0:0.2f}".format(humidity))
 elif sys.argv[1] == 'temperature':
-    print "%d" % (int(float(temperature) * 1000))
+    print("%d" % (int(float(temperature) * 1000)))
 elif sys.argv[1] == 'pressure':
-    print "%d" % (int(float(pressure) * 1000))
+    print("%d" % (int(float(pressure) * 1000)))
 elif sys.argv[1] == 'humidity':
-    print "%d" % (int(float(humidity) * 1000))
+    print("%d" % (int(float(humidity) * 1000)))
 else:
-    print "Usage: %s [temperature|pressure|humidity]" % (NAME,)
+    print("Usage: %s [temperature|pressure|humidity]" % (NAME,))
     sys.exit(1)

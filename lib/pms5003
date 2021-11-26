@@ -39,9 +39,16 @@
 # Required Debian packages:
 # apt-get install python-serial
 
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import chr
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import datetime, os, os.path, serial, sys, time
 import logging, logging.handlers
-import ConfigParser
+import configparser
 
 CFG_FILE = '/etc/airpi/airpi.cfg'
 DEFAULTS = {
@@ -52,7 +59,7 @@ DEFAULTS = {
     'AVERAGE_READS':       '16',                     # Make several reads, then calculate the average.
     'SLEEP_BETWEEN_READS': '-1'                      # Seconds to sleep before repeating averaged read. Use -1 to exit.
 }
-config = ConfigParser.RawConfigParser(DEFAULTS)
+config = configparser.RawConfigParser(DEFAULTS)
 try: config.read(CFG_FILE)
 except: pass
 if not config.has_section('pms5003'): config.add_section('pms5003')
@@ -102,13 +109,13 @@ CMD_WAKEUP = b'\x42' + b'\x4d' + b'\xe4' + b'\x00' + b'\x01'
 # Convert a two bytes string into a 16 bit integer.
 #---------------------------------------------------------------
 def int16bit(b):
-    return (ord(b[0]) << 8) + ord(b[1])
+    return (b[0] << 8) + b[1]
 
 #---------------------------------------------------------------
 # Return the hex dump of a buffer of bytes.
 #---------------------------------------------------------------
 def buff2hex(b):
-    return " ".join("0x{:02x}".format(ord(c)) for c in b)
+    return " ".join("0x{:02x}".format(c) for c in b)
 
 #---------------------------------------------------------------
 # Make a list of averaged reads: (datetime, float, float, ...)
@@ -153,7 +160,7 @@ def sensor_reset():
             with open(os.path.join(PMS5003_RESET_GPIO, 'value'), 'w') as f:
                 f.write("1\n")
             time.sleep(1.0)
-    except Exception, e:
+    except Exception as e:
         logging.error(u'PMS5003 sensor RESET via GPIO line: Exception %s' % (str(e),))
     except KeyboardInterrupt:
         sys.exit(1)
@@ -190,9 +197,10 @@ def sensor_wakeup(_port):
 #---------------------------------------------------------------
 def send_buffer(b, _port):
     checksum = 0
+    print(type(b))
     for i in range(0, len(b)):
-        checksum += ord(b[i])
-    b += chr(checksum / 256) + chr(checksum % 256)
+        checksum += b[i]
+    b += (chr(old_div(checksum, 256)) + chr(checksum % 256)).encode('ascii')
     logging.debug("Using passive mode to send buffer: %s" % (buff2hex(b),))
     _port.flushInput()
     written = _port.write(b)
@@ -230,8 +238,8 @@ def read_pm_frame(_port):
     start = datetime.datetime.utcnow()
     while True:
         b0 = _port.read()
-        if b0 != '':
-            logging.debug('Got char 0x%x from serial read()' % (ord(b0),))
+        if b0 != b'':
+            logging.debug('Got char 0x%x from serial read()' % (int.from_bytes(b0,byteorder='little'),))
         else:
             logging.debug('Timeout on serial read()')
         if b0 == b'\x42':
@@ -239,7 +247,7 @@ def read_pm_frame(_port):
             if b1 == b'\x4d':
                 b2 = _port.read()
                 b3 = _port.read()
-                frame_len = ord(b2) * 256 + ord(b3)
+                frame_len = int.from_bytes(b2,byteorder='little') * 256 + int.from_bytes(b3,byteorder='little')
                 if frame_len == DATA_FRAME_LENGTH:
                     # Normal data frame.
                     frame += b0 + b1 + b2 + b3
@@ -251,7 +259,7 @@ def read_pm_frame(_port):
                     expected = int16bit(frame[-2:])
                     checksum = 0
                     for i in range(0, len(frame) - 2):
-                        checksum += ord(frame[i])
+                        checksum += frame[i]
                     if checksum != expected:
                         logging.error("Checksum mismatch: %d, expected %d" % (checksum, expected))
                         return None

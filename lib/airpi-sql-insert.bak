@@ -11,8 +11,6 @@
 #
 #   airpi-sql-insert t=19.60,hum=66.5,p=990,...
 
-from __future__ import print_function
-from builtins import str
 import datetime, logging, logging.handlers, os.path, sqlite3, sys
 
 SQLITE_DB = '/var/lib/airpi/airpi-data.db'
@@ -39,7 +37,7 @@ def sqlcreate(filename):
         con.execute('CREATE UNIQUE INDEX data_timestamp_type_key ON data (timestamp, type)')
         con.commit()
         con.close()
-    except Exception as e:
+    except Exception, e:
         logging.error(u'%s: Failed to create the SQLite database: %s' % (NAME, str(e)))
         sys.exit(1)
 
@@ -47,8 +45,8 @@ def sqlcreate(filename):
 # Main.
 #---------------------------------------------------------------
 if len(sys.argv) < 3:
-    print("Usage:   %s TIMESTAMP type1=value1,type2=value2,..." % (NAME))
-    print("Example: %s 2017-02-16T10:52:41Z t=19.60,hum=66.5,p=990,pm10=54.43,pm2.5=43.78" % (NAME))
+    print "Usage:   %s TIMESTAMP type1=value1,type2=value2,..." % (NAME)
+    print "Example: %s 2017-02-16T10:52:41Z t=19.60,hum=66.5,p=990,pm10=54.43,pm2.5=43.78" % (NAME)
     sys.exit(1)
 
 timestamp = sys.argv[1]
@@ -64,7 +62,7 @@ if not os.path.isfile(SQLITE_DB):
 try:
     con = sqlite3.connect(SQLITE_DB)
     cur = con.cursor()
-except Exception as e:
+except Exception, e:
     logging.error(u'%s: Cannot open database: %s' % (NAME, str(e),))
     sys.exit(1)
 
@@ -78,13 +76,13 @@ for d in data:
             con.execute(sql)
         else:
             logging.warning(u'%s: Data "%s" does not contain a valid field' % (NAME, d))
-    except Exception as e:
+    except Exception, e:
         logging.warning(u'%s: Data "%s" caused exception "%s"' % (NAME, d, str(e)))
         continue
 
 try:
     con.commit()
     con.close()
-except Exception as e:
+except Exception, e:
     logging.error(u'%s: Committing data to database: "%s"' % (NAME, str(e)))
     sys.exit(1)

@@ -23,7 +23,6 @@ CFG_IF_STATIC = /etc/network/interfaces.static
 CFG_SBIN := $(shell cd webconfig/sbin; echo *)
 
 LIB_FILES := $(shell cd lib; echo airpi-* bme280* calibration* pms5003* rrd-graph-*)
-LIB_PYLIB := $(shell cd lib; echo Adafruit_BME280*)
 
 # Check if an SNMP group exists.
 ifneq ($(shell grep '^Debian-snmp:' /etc/group),)
@@ -45,7 +44,6 @@ install: install-lib
 .PHONY: install-lib
 install-lib:
 	install -m 755 -o root -g root -D -t $(LIBDIR) $(addprefix lib/, $(LIB_FILES))
-	install -m 644 -o root -g root -D -t $(LIBDIR) $(addprefix lib/, $(LIB_PYLIB))
 	python -m compileall $(LIBDIR)
 
 .PHONY: install-directories
@@ -81,5 +79,4 @@ install-html: install-directories
 .PHONY: uninstall
 uninstall:
 	-rm -f $(addprefix $(LIBDIR)/, $(LIB_FILES))
-	-rm -f $(addprefix $(LIBDIR)/, $(LIB_PYLIB))
 	-rm -f $(LIBDIR)/*.pyc
