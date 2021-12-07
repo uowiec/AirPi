@@ -14,8 +14,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import str
 from builtins import range
-import os, os.path, pickle, sys, board
-#from Adafruit_BME280 import *
+import os, os.path, pickle, sys, board, time
 from adafruit_bme280 import advanced as adafruit_bme280
 
 NAME = os.path.basename(sys.argv[0])
@@ -55,7 +54,7 @@ try:
     if os.path.isfile(BME280_STATUS):
         st = os.stat(BME280_STATUS)
         if (time.time() - st.st_mtime) <= MAX_CACHE_SECONDS:
-            with open(BME280_STATUS) as f:
+            with open(BME280_STATUS, 'rb') as f:
                 temperature, pressure, humidity = pickle.load(f)
 except Exception as e:
     if interactive:
