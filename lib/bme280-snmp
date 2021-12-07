@@ -82,7 +82,7 @@ if temperature == None or pressure == None or humidity == None:
         sys.exit(1)
 
     try:
-        with open(BME280_STATUS, 'w') as f:
+        with open(BME280_STATUS, 'wb') as f:
             pickle.dump([temperature, pressure, humidity], f)
     except Exception as e:
         if interactive:
